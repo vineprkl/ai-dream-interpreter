@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}AI解梦工具 - 管理面板{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">AI接口配置</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin_dashboard') }}">
+                    {{ form.csrf_token }}
+                    <div class="mb-3">
+                        {{ form.api_url.label(class="form-label") }}
+                        {{ form.api_url(class="form-control") }}
+                        {% if form.api_url.errors %}
+                            {% for error in form.api_url.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.api_key.label(class="form-label") }}
+                        {{ form.api_key(class="form-control") }}
+                        {% if form.api_key.errors %}
+                            {% for error in form.api_key.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.model_name.label(class="form-label") }}
+                        {{ form.model_name(class="form-control") }}
+                        {% if form.model_name.errors %}
+                            {% for error in form.model_name.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    {{ form.submit(class="btn btn-primary") }}
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">解梦历史记录</h4>
+                <div class="d-flex gap-2">
+                    <div class="dropdown">
+                        <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-download"></i> 导出
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="exportHistory('all')">
+                                <i class="bi bi-file-earmark-text"></i> 导出全部记录
+                            </a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="exportHistory('selected')">
+                                <i class="bi bi-check2-square"></i> 导出选中记录
+                            </a></li>
+                        </ul>
+                    </div>
+                    <button class="btn btn-danger btn-sm" onclick="clearHistory()">
+                        <i class="bi bi-trash"></i> 清空记录
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_dreams %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="text-center" width="5%">
+                                        <input type="checkbox" class="form-check-input" id="selectAll" onclick="toggleSelectAll()">
+                                    </th>
+                                    <th width="15%">时间</th>
+                                    <th width="35%">梦境内容</th>
+                                    <th width="35%">解析结果</th>
+                                    <th width="10%" class="text-center">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for dream in recent_dreams %}
+                                <tr id="dream-{{ dream.id }}">
+                                    <td class="text-center">
+                                        <input type="checkbox" class="form-check-input dream-select" value="{{ dream.id }}">
+                                    </td>
+                                    <td>{{ dream.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 300px;" title="{{ dream.content }}">
+                                            {{ dream.content }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 300px;" title="{{ dream.interpretation }}">
+                                            {{ dream.interpretation }}
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="viewDream({{ dream.id }})">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteDream({{ dream.id }})">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-4">暂无解梦记录</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card sticky-top" style="top: 20px;">
+            <div class="card-header">
+                <h4 class="mb-0">管理面板说明</h4>
+            </div>
+            <div class="card-body admin-guide">
+                <h5>AI接口配置</h5>
+                <p>配置AI接口参数，用于解梦功能：</p>
+                <ul>
+                    <li>API地址：AI服务的接口地址</li>
+                    <li>API密钥：访问AI服务的授权密钥</li>
+                    <li>模型名称：使用的AI模型标识符</li>
+                </ul>
+                <hr>
+                <h5>历史记录管理</h5>
+                <ul>
+                    <li>可以查看所有用户的解梦记录</li>
+                    <li>支持导出全部或选中记录</li>
+                    <li>可以查看、删除单条记录</li>
+                    <li>支持批量操作和导出</li>
+                </ul>
+                <hr>
+                <h5>网站设置</h5>
+                <form method="POST" action="{{ url_for('update_settings') }}" class="mt-3">
+                    <div class="mb-3">
+                        <label class="form-label">网站域名</label>
+                        <input type="text" class="form-control" name="site_domain" value="{{ site_domain }}" placeholder="例如：https://dream.example.com">
+                        <div class="form-text">用于生成分享链接，留空则使用当前域名</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">保存设置</button>
+                </form>
+                <hr>
+                <div class="alert alert-warning">
+                    <strong>安全提示：</strong>
+                    <ul class="mb-0">
+                        <li>请定期更改管理员密码</li>
+                        <li>谨慎使用删除功能</li>
+                        <li>建议定期备份数据</li>
+                        <li>请妥善保管API密钥</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 查看记录的模态框 -->
+<div class="modal fade" id="dreamModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">梦境详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6>梦境内容：</h6>
+                    <div id="dreamContent" class="dream-content-box"></div>
+                </div>
+                <div>
+                    <h6>解析结果：</h6>
+                    <div id="dreamInterpretation" class="interpretation-result"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <a href="#" id="exportSingleDream" class="btn btn-primary">
+                    <i class="bi bi-download"></i> 导出此记录
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.dream-content-box {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let dreamModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    dreamModal = new bootstrap.Modal(document.getElementById('dreamModal'));
+});
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.dream-select');
+    checkboxes.forEach(checkbox => checkbox.checked = selectAll.checked);
+}
+
+function getSelectedDreams() {
+    return Array.from(document.querySelectorAll('.dream-select:checked')).map(cb => cb.value);
+}
+
+function viewDream(dreamId) {
+    fetch(`/admin/dreams/${dreamId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('dreamContent').textContent = data.dream.content;
+                document.getElementById('dreamInterpretation').innerHTML = data.dream.interpretation_html;
+                document.getElementById('exportSingleDream').href = `/admin/dreams/${dreamId}/export`;
+                dreamModal.show();
+            } else {
+                alert('获取记录失败：' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('获取记录失败，请重试');
+        });
+}
+
+function deleteDream(dreamId) {
+    if (confirm('确定要删除这条记录吗？此操作不可恢复。')) {
+        fetch(`/admin/dreams/${dreamId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById(`dream-${dreamId}`).remove();
+                if (document.querySelectorAll('tbody tr').length === 0) {
+                    location.reload();
+                }
+            } else {
+                alert('删除失败：' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('删除失败，请重试');
+        });
+    }
+}
+
+function clearHistory() {
+    if (confirm('确定要清空所有历史记录吗？此操作不可恢复！')) {
+        fetch('/admin/dreams/clear', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('清空失败：' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('清空失败，请重试');
+        });
+    }
+}
+
+function exportHistory(type) {
+    if (type === 'selected') {
+        const selectedIds = getSelectedDreams();
+        if (selectedIds.length === 0) {
+            alert('请先选择要导出的记录');
+            return;
+        }
+        window.location.href = `/admin/dreams/export?ids=${selectedIds.join(',')}`;
+    } else {
+        window.location.href = '/admin/dreams/export';
+    }
+}
+</script>
+{% endblock %} 

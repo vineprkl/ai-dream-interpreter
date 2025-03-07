@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}AI解梦工具 - 首页{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="text-center mb-4">
+            <h1 class="display-4 mb-3" style="color: var(--text-color);">
+                <i class="bi bi-moon-stars" style="color: var(--accent-color);"></i> AI解梦工具
+            </h1>
+            <p class="lead" style="color: var(--text-secondary);">
+                通过人工智能技术，为您解析梦境的深层含义
+            </p>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">解析你的梦境</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('index') }}">
+                    {{ form.csrf_token }}
+                    <div class="mb-3">
+                        {{ form.dream_content.label(class="form-label") }}
+                        {{ form.dream_content(class="form-control", rows=5, placeholder="请详细描述你的梦境内容，包括情境、人物和您的情绪感受...") }}
+                        {% if form.dream_content.errors %}
+                            {% for error in form.dream_content.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                        <div class="form-text mt-2" style="color: var(--text-secondary);">
+                            提示：描述越详细，解析结果越准确
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        {{ form.submit(class="btn btn-primary btn-lg px-5") }}
+                    </div>
+                </form>
+
+                {% if interpretation %}
+                <div class="mt-4 interpretation-container">
+                    <h5 class="card-title mb-3" style="color: var(--text-secondary);">梦境解析结果：</h5>
+                    <div class="interpretation-result">
+                        {{ interpretation | markdown | safe }}
+                    </div>
+                    {% if report_url %}
+                    <div class="mt-4 text-center">
+                        <p class="text-muted mb-3">您可以下载或分享这份专业的梦境心理分析报告</p>
+                        <div class="d-flex gap-2 justify-content-center flex-wrap">
+                            <a href="{{ report_url }}" target="_blank" class="btn btn-outline-primary">
+                                <i class="bi bi-file-earmark-text"></i> 查看完整报告
+                            </a>
+                            <button class="btn btn-outline-primary" onclick="copyReportLink('{{ report_url }}')">
+                                <i class="bi bi-share"></i> 复制分享链接
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.interpretation-container {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.btn-lg {
+    min-width: 200px;
+}
+
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2rem;
+    }
+    
+    .lead {
+        font-size: 1rem;
+    }
+    
+    .btn-lg {
+        min-width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyReportLink(url) {
+    // 直接使用完整URL
+    const fullUrl = url;
+    
+    // 创建临时输入框
+    const tempInput = document.createElement('input');
+    tempInput.value = fullUrl;
+    document.body.appendChild(tempInput);
+    
+    // 选择并复制文本
+    tempInput.select();
+    document.execCommand('copy');
+    
+    // 移除临时输入框
+    document.body.removeChild(tempInput);
+    
+    // 显示提示
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-success alert-dismissible fade show position-fixed bottom-0 end-0 m-3';
+    alert.innerHTML = `
+        分享链接已复制到剪贴板！
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+    
+    // 自动关闭提示
+    setTimeout(() => {
+        alert.remove();
+    }, 3000);
+}
+</script>
+{% endblock %} 
