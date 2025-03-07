@@ -87,9 +87,9 @@ class AIConfigForm(FlaskForm):
 
 # AI接口配置
 DEFAULT_AI_CONFIG = {
-    'api_url': "https://ai.dajiba.lol/v1/chat/completions",
-    'api_key': "sk-jOVRpWV6gLQHNhGnAe7LPqCLo4VDOyvHOaLkEIloHKpZcRvz",
-    'model_name': "gemini-2.0-flash-thinking-exp"
+    'api_url': "https://api.example.com/v1/chat/completions",
+    'api_key': "your-api-key-here",
+    'model_name': "gpt-3.5-turbo"
 }
 
 # 系统提示词（固定模板）
